@@ -1,0 +1,144 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.panel {
+  width: min(760px, 100%);
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.12);
+  padding: 32px;
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: 32px;
+  letter-spacing: -0.4px;
+}
+
+.meta {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: #0f172a;
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.status-badge--idle {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-badge--saved {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-badge--error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-badge--dirty {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-badge--saving {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.editor-shell {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+  min-height: 120px;
+  margin-bottom: 16px;
+  background: #f8fafc;
+  transition: border-color 0.2s ease;
+}
+
+.editor-shell .ProseMirror {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.editor-shell .ProseMirror:focus {
+  outline: none;
+}
+
+.editor-shell:focus-within {
+  border-color: #93c5fd;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.primary-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 20px;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.primary-btn:hover:enabled {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.4);
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
