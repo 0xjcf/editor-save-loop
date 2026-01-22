@@ -6,20 +6,26 @@ import {
 	initialDocState,
 	reduceDoc,
 } from "./core";
+import { type DocSnapshot, isDocSnapshot } from "./docSnapshot";
 import type { DocPort } from "./ports";
 
+/**
+ * DocStore is the imperative shell. It owns long-lived state, coordinates
+ * workflows (save/cancel), and talks to ports. All state changes flow
+ * through core events so behavior remains deterministic.
+ */
 export class DocStore {
 	// --- State owned over time (actor-ish owner)
 	state: DocState = initialDocState;
 
-	// --- Ports (contract) injected; adapter is replaceable
-	private port: DocPort;
+	// --- Port interface injected; any adapter implementing DocPort can be swapped in.
+	private adapter: DocPort;
 
 	// --- Shell concerns (cancellation)
 	private controller: AbortController | null = null;
 
-	constructor(port: DocPort) {
-		this.port = port;
+	constructor(adapter: DocPort) {
+		this.adapter = adapter;
 		makeAutoObservable(this, {}, { autoBind: true });
 	}
 
@@ -30,10 +36,22 @@ export class DocStore {
 
 	// Delivery / UI intent: editor changed
 	onEditorChanged(doc: unknown) {
-		this.dispatch({ type: "DOC_CHANGED", doc });
+		if (isDocSnapshot(doc)) {
+			this.dispatch({ type: "DOC_CHANGED", doc });
+			return;
+		}
+
+		this.dispatch({
+			type: "DOC_INVALID",
+			message: "Editor produced an invalid document snapshot.",
+		});
 	}
 
-	private getDocSizeBytes(doc: unknown) {
+	/**
+	 * Measure document size in the shell so the core can make policy decisions
+	 * without performing serialization work itself.
+	 */
+	private getDocSizeBytes(doc: DocSnapshot) {
 		try {
 			return { ok: true, bytes: JSON.stringify(toJS(doc)).length } as const;
 		} catch {
@@ -41,6 +59,10 @@ export class DocStore {
 		}
 	}
 
+	/**
+	 * Explicit save action: ask the core if saving is allowed, then call the port.
+	 * The core can reject the save, and the shell respects that decision.
+	 */
 	async saveNow() {
 		// cancel in-flight saves; latest wins (performance + sanity)
 		this.controller?.abort();
@@ -69,7 +91,8 @@ export class DocStore {
 		// If core rejected the request (e.g., policy guard), stop here.
 		if (this.state.status !== "saving") return;
 
-		const result = await this.port.save(doc, this.controller.signal);
+		// Call through the port interface; the concrete adapter is interchangeable.
+		const result = await this.adapter.save(doc, this.controller.signal);
 
 		runInAction(() => {
 			if (result.ok) {
@@ -82,5 +105,5 @@ export class DocStore {
 	}
 }
 
-// default wiring (swap adapter later without touching core)
+// Default wiring: FakeDocAdapter is one concrete adapter for the DocPort.
 export const docStore = new DocStore(new FakeDocAdapter());
