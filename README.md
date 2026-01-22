@@ -8,6 +8,14 @@ This project is a small React + TipTap editor that demonstrates a clean architec
 - **Projection** for mapping state to UI-friendly view data.
 - **Errors as data** so failures become explicit, testable outcomes.
 
+## Screenshots
+
+Screenshots live in `src/assets`.
+
+| Idle state | Unsaved changes | Saved state |
+| --- | --- | --- |
+| ![Idle state](src/assets/idle.png) | ![Unsaved changes](src/assets/unsaved.png) | ![Saved state](src/assets/saved.png) |
+
 ## Architecture map
 
 - **Functional core**: `src/core.ts`
@@ -57,5 +65,9 @@ This project is a small React + TipTap editor that demonstrates a clean architec
 
 - Install: `npm install`
 - Run: `npm run dev`
+
+## Architecture links
+
+- <https://www.0xjcf.com/writing/when-code-becomes-cheap/>
 
 The project is intentionally small so the architecture is easy to see and reason about.
