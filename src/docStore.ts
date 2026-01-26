@@ -19,13 +19,13 @@ export class DocStore {
 	state: DocState = initialDocState;
 
 	// --- Port interface injected; any adapter implementing DocPort can be swapped in.
-	private adapter: DocPort;
+	private docPort: DocPort;
 
 	// --- Shell concerns (cancellation)
 	private controller: AbortController | null = null;
 
-	constructor(adapter: DocPort) {
-		this.adapter = adapter;
+	constructor(docPort: DocPort) {
+		this.docPort = docPort;
 		makeAutoObservable(this, {}, { autoBind: true });
 	}
 
@@ -91,8 +91,8 @@ export class DocStore {
 		// If core rejected the request (e.g., policy guard), stop here.
 		if (this.state.status !== "saving") return;
 
-		// Call through the port interface; the concrete adapter is interchangeable.
-		const result = await this.adapter.save(doc, this.controller.signal);
+		// Call through the port interface; the concrete docPort is interchangeable.
+		const result = await this.docPort.save(doc, this.controller.signal);
 
 		if (result.ok) {
 			this.dispatch({ type: "SAVE_SUCCEEDED", at: Date.now() });
