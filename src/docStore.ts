@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction, toJS } from "mobx";
+import { makeAutoObservable, toJS } from "mobx";
 import { FakeDocAdapter } from "./adapter";
 import {
 	type DocEvent,
@@ -94,14 +94,12 @@ export class DocStore {
 		// Call through the port interface; the concrete adapter is interchangeable.
 		const result = await this.adapter.save(doc, this.controller.signal);
 
-		runInAction(() => {
-			if (result.ok) {
-				this.dispatch({ type: "SAVE_SUCCEEDED", at: Date.now() });
-			} else {
-				// treat as fact → core decides the state
-				this.dispatch({ type: "SAVE_FAILED", message: result.error });
-			}
-		});
+		if (result.ok) {
+			this.dispatch({ type: "SAVE_SUCCEEDED", at: Date.now() });
+		} else {
+			// treat as fact → core decides the state
+			this.dispatch({ type: "SAVE_FAILED", message: result.error });
+		}
 	}
 }
 
