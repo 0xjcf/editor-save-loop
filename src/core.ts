@@ -59,6 +59,7 @@ export function reduceDoc(state: DocState, event: DocEvent): DocState {
                 ...state,
                 status: "error",
                 error: event.message,
+                doc: null,
             };
 
         case "SAVE_REQUESTED": {

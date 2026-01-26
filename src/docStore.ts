@@ -23,6 +23,7 @@ export class DocStore {
 
 	// --- Shell concerns (cancellation)
 	private controller: AbortController | null = null;
+	private saveRequestId = 0;
 
 	constructor(docPort: DocPort) {
 		this.docPort = docPort;
@@ -53,7 +54,9 @@ export class DocStore {
 	 */
 	private getDocSizeBytes(doc: DocSnapshot) {
 		try {
-			return { ok: true, bytes: JSON.stringify(toJS(doc)).length } as const;
+			const json = JSON.stringify(toJS(doc));
+			const bytes = new TextEncoder().encode(json).length;
+			return { ok: true, bytes } as const;
 		} catch {
 			return { ok: false, error: "Unable to measure document size." } as const;
 		}
@@ -67,6 +70,7 @@ export class DocStore {
 		// cancel in-flight saves; latest wins (performance + sanity)
 		this.controller?.abort();
 		this.controller = new AbortController();
+		const requestId = ++this.saveRequestId;
 
 		const doc = this.state.doc;
 		if (!doc) {
@@ -93,6 +97,10 @@ export class DocStore {
 
 		// Call through the port interface; the concrete docPort is interchangeable.
 		const result = await this.docPort.save(doc, this.controller.signal);
+
+		// Ignore stale results if a newer save started.
+		if (requestId !== this.saveRequestId) return;
+		if (!result.ok && result.error === "aborted") return;
 
 		if (result.ok) {
 			this.dispatch({ type: "SAVE_SUCCEEDED", at: Date.now() });
