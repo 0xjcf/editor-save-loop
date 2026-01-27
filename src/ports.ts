@@ -4,7 +4,10 @@
  */
 import type { DocSnapshot } from "./docSnapshot";
 
-export type SaveResult = { ok: true } | { ok: false; error: string };
+export type SaveResult =
+    | { ok: true }
+    | { ok: false; reason: "aborted" }
+    | { ok: false; reason: "failed"; error: string };
 
 /**
  * DocPort is the IO boundary for persistence. The shell depends on this

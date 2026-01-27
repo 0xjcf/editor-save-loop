@@ -23,6 +23,10 @@ Screenshots live in `src/assets`.
   - Enforces policy (e.g., max document size).
   - Produces deterministic state from events.
 
+- **FSM (visual workflow)**: `src/docMachine.ts`
+  - Pure state machine for workflow visualization.
+  - Receives events emitted by the core reducer.
+
 - **Projection**: `src/projection.ts`
   - Converts core state into UI-facing labels and flags.
   - Keeps view logic out of components.

@@ -63,7 +63,11 @@ describe("reduceDoc", () => {
 
 	it("increments revision on save success", () => {
 		const seededState = { ...initialDocState, revision: 2, doc };
-		const result = reduceDoc(seededState, { type: "SAVE_SUCCEEDED", at: 123 });
+		const result = reduceDoc(seededState, {
+			type: "SAVE_COMPLETED",
+			at: 123,
+			result: { ok: true },
+		});
 
 		expect(result.state.revision).toBe(3);
 		expect(result.state.lastSavedAt).toBe(123);
@@ -73,12 +77,25 @@ describe("reduceDoc", () => {
 	it("records error on save failure", () => {
 		const seededState = { ...initialDocState, doc };
 		const result = reduceDoc(seededState, {
-			type: "SAVE_FAILED",
-			message: "save failed",
+			type: "SAVE_COMPLETED",
+			at: 456,
+			result: { ok: false, reason: "failed", error: "save failed" },
 		});
 
 		expect(result.state.error).toBe("save failed");
 		expect(result.emit).toEqual({ type: "SAVE_FAILED" });
+	});
+
+	it("treats aborted save as a first-class fact", () => {
+		const seededState = { ...initialDocState, doc, error: "old" };
+		const result = reduceDoc(seededState, {
+			type: "SAVE_COMPLETED",
+			at: 789,
+			result: { ok: false, reason: "aborted" },
+		});
+
+		expect(result.state.error).toBeNull();
+		expect(result.emit).toEqual({ type: "SAVE_ABORTED" });
 	});
 
 	it("omits emit when save requested without a doc", () => {

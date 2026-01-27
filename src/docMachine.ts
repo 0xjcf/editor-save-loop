@@ -5,6 +5,7 @@ export type DocFsmEvent =
 	| { type: "DOC_CHANGED" }
 	| { type: "DOC_INVALID" }
 	| { type: "SAVE_STARTED" }
+	| { type: "SAVE_ABORTED" }
 	| { type: "SAVE_REJECTED" }
 	| { type: "SAVE_SUCCEEDED" }
 	| { type: "SAVE_FAILED" };
@@ -43,6 +44,7 @@ export const docMachine = setup({
 				SAVE_SUCCEEDED: "saved",
 				SAVE_FAILED: "error",
 				SAVE_REJECTED: "error",
+				SAVE_ABORTED: "dirty",
 			},
 		},
 		saved: {

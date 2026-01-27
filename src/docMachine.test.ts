@@ -17,6 +17,8 @@ describe("docMachine", () => {
 
 		actor.send({ type: "SAVE_SUCCEEDED" });
 		expect(actor.getSnapshot().value).toBe("saved");
+
+		actor.stop();
 	});
 
 	it("transitions to error on failure", () => {
@@ -27,5 +29,19 @@ describe("docMachine", () => {
 		actor.send({ type: "SAVE_FAILED" });
 
 		expect(actor.getSnapshot().value).toBe("error");
+
+		actor.stop();
+	});
+
+	it("returns to dirty on abort", () => {
+		const actor = createActor(docMachine);
+		actor.start();
+
+		actor.send({ type: "SAVE_STARTED" });
+		actor.send({ type: "SAVE_ABORTED" });
+
+		expect(actor.getSnapshot().value).toBe("dirty");
+
+		actor.stop();
 	});
 });

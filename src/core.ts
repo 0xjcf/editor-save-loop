@@ -1,5 +1,6 @@
 import type { DocFsmEvent } from "./docMachine";
 import type { DocChangeEvent, DocSnapshot } from "./docSnapshot";
+import type { SaveResult } from "./ports";
 
 /**
  * DocState holds business data and persisted meaning.
@@ -19,12 +20,11 @@ export type DocState = {
 export type DocEvent =
     | DocChangeEvent
     | {
-          type: "SAVE_REQUESTED";
-          docPresent: boolean;
-          sizeResult: { ok: true; bytes: number } | { ok: false; error: string };
-      }
-    | { type: "SAVE_SUCCEEDED"; at: number }
-    | { type: "SAVE_FAILED"; message: string };
+        type: "SAVE_REQUESTED";
+        docPresent: boolean;
+        sizeResult: { ok: true; bytes: number } | { ok: false; error: string };
+    }
+    | { type: "SAVE_COMPLETED"; at: number; result: SaveResult };
 
 // Core-level policy: reject overly large docs to keep saves bounded.
 // The shell measures bytes; the core only decides based on that data.
@@ -100,22 +100,31 @@ export function reduceDoc(state: DocState, event: DocEvent): DocReduceResult {
             };
         }
 
-        case "SAVE_SUCCEEDED":
-            return {
-                state: {
-                    ...state,
-                    revision: state.revision + 1,
-                    lastSavedAt: event.at,
-                    error: null,
-                },
-                emit: { type: "SAVE_SUCCEEDED" },
-            };
+        case "SAVE_COMPLETED": {
+            if (event.result.ok) {
+                return {
+                    state: {
+                        ...state,
+                        revision: state.revision + 1,
+                        lastSavedAt: event.at,
+                        error: null,
+                    },
+                    emit: { type: "SAVE_SUCCEEDED" },
+                };
+            }
 
-        case "SAVE_FAILED":
+            if (event.result.reason === "aborted") {
+                return {
+                    state: { ...state, error: null },
+                    emit: { type: "SAVE_ABORTED" },
+                };
+            }
+
             return {
-                state: { ...state, error: event.message },
+                state: { ...state, error: event.result.error },
                 emit: { type: "SAVE_FAILED" },
             };
+        }
 
         default:
             return { state };
