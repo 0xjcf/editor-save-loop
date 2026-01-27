@@ -1,16 +1,11 @@
-import type { DocSnapshot } from "./docSnapshot";
+import type { DocFsmEvent } from "./docMachine";
+import type { DocChangeEvent, DocSnapshot } from "./docSnapshot";
 
 /**
- * SaveStatus is the finite set of states the document can be in.
- */
-export type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
-
-/**
- * DocState is the single source of truth for editor behavior.
- * It is updated only by reduceDoc in response to events.
+ * DocState holds business data and persisted meaning.
+ * Workflow state is tracked by the FSM; this stays deterministic and serializable.
  */
 export type DocState = {
-    status: SaveStatus;
     revision: number;
     lastSavedAt: number | null;
     error: string | null;
@@ -22,9 +17,12 @@ export type DocState = {
  * not how to respond. The core decides how state should change.
  */
 export type DocEvent =
-    | { type: "DOC_CHANGED"; doc: DocSnapshot }
-    | { type: "DOC_INVALID"; message: string }
-    | { type: "SAVE_REQUESTED"; docSizeBytes: number | null; docSizeError?: string }
+    | DocChangeEvent
+    | {
+          type: "SAVE_REQUESTED";
+          docPresent: boolean;
+          sizeResult: { ok: true; bytes: number } | { ok: false; error: string };
+      }
     | { type: "SAVE_SUCCEEDED"; at: number }
     | { type: "SAVE_FAILED"; message: string };
 
@@ -33,71 +31,93 @@ export type DocEvent =
 const MAX_DOC_BYTES = 50_000;
 
 export const initialDocState: DocState = {
-    status: "idle",
     revision: 0,
     lastSavedAt: null,
     error: null,
     doc: null,
 };
 
+export type DocReduceResult = {
+    state: DocState;
+    emit?: DocFsmEvent;
+};
+
 /**
- * Pure reducer: given the current state and an event, returns the next state.
+ * Pure reducer: given the current state and an event, returns the next state
+ * plus an optional FSM event to emit for visualization.
  * No IO, no time reads, and no environment access.
  */
-export function reduceDoc(state: DocState, event: DocEvent): DocState {
+export function reduceDoc(state: DocState, event: DocEvent): DocReduceResult {
     switch (event.type) {
         case "DOC_CHANGED":
             return {
-                ...state,
-                doc: event.doc,
-                status: "dirty",
-                error: null,
+                state: {
+                    ...state,
+                    doc: event.doc,
+                    error: null,
+                },
+                emit: { type: "DOC_CHANGED" },
             };
 
         case "DOC_INVALID":
             return {
-                ...state,
-                status: "error",
-                error: event.message,
-                doc: null,
+                state: {
+                    ...state,
+                    error: event.message,
+                    doc: null,
+                },
+                emit: { type: "DOC_INVALID" },
             };
 
         case "SAVE_REQUESTED": {
-            // Guard: don't "save" without a doc snapshot.
-            if (!state.doc) return state;
+            if (!event.docPresent) {
+                return { state };
+            }
 
-            if (event.docSizeBytes === null) {
+            if (!event.sizeResult.ok) {
                 return {
-                    ...state,
-                    status: "error",
-                    error: event.docSizeError ?? "Unable to measure document size.",
+                    state: {
+                        ...state,
+                        error: event.sizeResult.error,
+                    },
+                    emit: { type: "SAVE_REJECTED" },
                 };
             }
 
-            if (event.docSizeBytes > MAX_DOC_BYTES) {
+            if (event.sizeResult.bytes > MAX_DOC_BYTES) {
                 return {
-                    ...state,
-                    status: "error",
-                    error: "Document is too large to save.",
+                    state: {
+                        ...state,
+                        error: "Document is too large to save.",
+                    },
+                    emit: { type: "SAVE_REJECTED" },
                 };
             }
 
-            return { ...state, status: "saving", error: null };
+            return {
+                state: { ...state, error: null },
+                emit: { type: "SAVE_STARTED" },
+            };
         }
 
         case "SAVE_SUCCEEDED":
             return {
-                ...state,
-                status: "saved",
-                revision: state.revision + 1,
-                lastSavedAt: event.at,
-                error: null,
+                state: {
+                    ...state,
+                    revision: state.revision + 1,
+                    lastSavedAt: event.at,
+                    error: null,
+                },
+                emit: { type: "SAVE_SUCCEEDED" },
             };
 
         case "SAVE_FAILED":
-            return { ...state, status: "error", error: event.message };
+            return {
+                state: { ...state, error: event.message },
+                emit: { type: "SAVE_FAILED" },
+            };
 
         default:
-            return state;
+            return { state };
     }
 }

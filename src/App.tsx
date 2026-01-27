@@ -2,7 +2,6 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { observer } from "mobx-react-lite";
 import { docStore } from "./docStore";
-import { projectDoc } from "./projection";
 import "./App.css";
 
 /**
@@ -11,7 +10,16 @@ import "./App.css";
  */
 const App = observer(() => {
   // Keep view formatting out of the component by projecting state.
-  const view = projectDoc(docStore.state);
+  const {
+    saveNow,
+    statusClass,
+    statusLabel,
+    revision,
+    lastSavedLabel,
+    showError,
+    errorText,
+    canSaveNow
+  } = docStore.view;
 
   // TipTap emits JSON snapshots; the shell treats them as data events.
   const editor = useEditor({
@@ -30,21 +38,21 @@ const App = observer(() => {
         <div className="meta">
           <div>
             <span className="label">Status</span>
-            <span className={`status-badge status-badge--${docStore.state.status}`}>
-              {view.statusLabel}
+            <span className={`status-badge ${statusClass}`}>
+              {statusLabel}
             </span>
           </div>
           <div>
             <span className="label">Revision</span>
-            <span className="value">{docStore.state.revision}</span>
+            <span className="value">{revision}</span>
           </div>
           <div>
             <span className="label">Last saved</span>
-            <span className="value">{view.lastSavedLabel}</span>
+            <span className="value">{lastSavedLabel}</span>
           </div>
         </div>
 
-        {view.showError && <div className="error">{view.errorText}</div>}
+        {showError && <div className="error">{errorText}</div>}
 
         <div className="editor-shell">
           <EditorContent editor={editor} />
@@ -54,8 +62,8 @@ const App = observer(() => {
           <button
             type="button"
             className="primary-btn"
-            onClick={docStore.saveNow}
-            disabled={!view.canSaveNow}
+            onClick={saveNow}
+            disabled={!canSaveNow}
           >
             Save now
           </button>

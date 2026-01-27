@@ -7,13 +7,38 @@ export type DocSnapshot = {
 	content?: unknown[];
 };
 
+export type DocChangedEvent = { type: "DOC_CHANGED"; doc: DocSnapshot };
+export type DocInvalidEvent = { type: "DOC_INVALID"; message: string };
+// Domain events emitted at the editor boundary.
+export type DocChangeEvent = DocChangedEvent | DocInvalidEvent;
+
 /**
  * Basic runtime check to keep invalid editor output from entering the core.
  */
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export function isDocSnapshot(input: unknown): input is DocSnapshot {
-	if (!input || typeof input !== "object") return false;
-	const record = input as { type?: unknown; content?: unknown };
-	if (record.type !== "doc") return false;
-	if (record.content === undefined) return true;
-	return Array.isArray(record.content);
+	if (!isRecord(input)) return false;
+	if (input.type !== "doc") return false;
+	if (input.content === undefined) return true;
+	return Array.isArray(input.content);
+}
+
+/**
+ * Boundary mapper: convert unknown editor output into a typed domain event.
+ * Keeps validation out of the shell while preserving core purity.
+ */
+export function toDocEvent(
+	input: unknown,
+): DocChangeEvent {
+	if (isDocSnapshot(input)) {
+		return { type: "DOC_CHANGED", doc: input };
+	}
+
+	return {
+		type: "DOC_INVALID",
+		message: "Editor produced an invalid document snapshot.",
+	};
 }
