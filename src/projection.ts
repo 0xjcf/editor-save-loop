@@ -18,6 +18,7 @@ export type DocView = {
 export type DocViewModel = DocView & {
 	// Allowed UI actions (composed by the shell, not the projection).
 	saveNow: () => void;
+	onEditorChanged: (doc: unknown) => void;
 };
 
 /**

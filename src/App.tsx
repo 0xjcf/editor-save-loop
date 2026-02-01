@@ -1,7 +1,7 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { observer } from "mobx-react-lite";
-import { docStore } from "./docStore";
+import { docShell } from "./docStore";
 import "./App.css";
 
 /**
@@ -12,6 +12,7 @@ const App = observer(() => {
   // Keep view formatting out of the component by projecting state.
   const {
     saveNow,
+    onEditorChanged,
     statusClass,
     statusLabel,
     revision,
@@ -19,14 +20,14 @@ const App = observer(() => {
     showError,
     errorText,
     canSaveNow
-  } = docStore.view;
+  } = docShell.view;
 
   // TipTap emits JSON snapshots; the shell treats them as data events.
   const editor = useEditor({
     extensions: [StarterKit],
     content: "<p>Start typing…</p>",
     onUpdate({ editor }) {
-      docStore.onEditorChanged(editor.getJSON());
+      onEditorChanged(editor.getJSON());
     },
   });
 
