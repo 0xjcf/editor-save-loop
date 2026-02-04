@@ -73,12 +73,15 @@ export class DocShell {
 	}
 
 	// UI-facing view model; consumers should use this instead of raw state.
-	get view(): DocViewModel {
+	get view(): DocView {
+		return this.store.projection;
+	}
+
+	get commands() {
 		return {
-			...this.store.projection,
 			saveNow: this.saveNow,
 			onEditorChanged: this.onEditorChanged,
-		};
+		}
 	}
 
 	// Delivery / UI intent: editor changed
